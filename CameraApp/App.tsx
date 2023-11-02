@@ -10,6 +10,8 @@ import {
   Image,
 } from 'react-native';
 import {Camera, useCameraDevices} from 'react-native-vision-camera';
+import RNFetchBlob from 'rn-fetch-blob';
+
 
 function App() {
   const camera = useRef(null);
@@ -33,7 +35,6 @@ function App() {
       const photo = await camera.current.takePhoto({});
       setImageSource(photo.path);
       setShowCamera(false);
-      console.log(photo.path);
       uploadPhoto(photo.path);
 
     }
@@ -41,31 +42,33 @@ function App() {
 
   async function uploadPhoto(photoPath) {
     try {
-      const apiUrl = 'http://127.0.0.1:5000/detect-res-json';
+      const apiUrl = 'http://127.0.0.1:5000/detect-res-img';
 
-      const formData = new FormData();
-      formData.append('photo', {
-        uri: photoPath,
-        type: 'image/jpeg',
-        name: 'photo.jpg',
-      });
+      //the way it's formatted in VNAVI
+      RNFetchBlob.config({
+        fileCache: true,
+        appendExt: 'jpg',
+      })
+        .fetch(
+          'POST',
+          apiUrl,
+          { 'Content-Type': 'multipart/form-data' },
+          [
+            {
+              name: 'file',
+              filename: 'photo.jpg',
+              type: 'image/jpeg',
+              // data: RNFetchBlob.wrap(data.uri),
+              data: RNFetchBlob.wrap(photoPath),
+            },
+          ],
+        )
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log('Upload success:', responseData);
-      } else {
-        console.error('Upload failed:', response.status, response.statusText);
-      }
-    } catch (error) {
-      console.error('Error uploading photo:', error);
+        .then(res => {
+          console.log('The file saved to ', res.path());
+        })
+    } catch (err) {
+      console.error('Error', 'Failed to take picture: ' + (err.message || err));
     }
   }
 
