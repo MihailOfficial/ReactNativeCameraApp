@@ -9,7 +9,7 @@ import {
   Linking,
   Image,
 } from 'react-native';
-import {Camera, useCameraDevices} from 'react-native-vision-camera';
+import {Camera, useCameraDevices, useFrameProcessor} from 'react-native-vision-camera';
 import RNFetchBlob from 'rn-fetch-blob';
 
 
@@ -17,6 +17,12 @@ function App() {
   const camera = useRef(null);
   const devices = useCameraDevices();
   const device = devices.find((dev) => dev.position === 'back');
+  const frameProcessor = useFrameProcessor((frame) => {
+    'worklet'
+    console.log(`Frame: ${frame.width}x${frame.height} (${frame.pixelFormat})`)
+    console.log(':)))')
+    // uploadFrame(frame.image)
+  }, [])
 
   const [showCamera, setShowCamera] = useState(true);
   const [imageSource, setImageSource] = useState('');
@@ -72,7 +78,6 @@ function App() {
     }
   }
 
-
   if (!device) {
     console.log('No camera device available');
     return <Text>Camera not available</Text>;
@@ -88,6 +93,7 @@ function App() {
             device={device}
             isActive={showCamera}
             photo={true}
+            frameProcessor={frameProcessor}
           />
 
           <View style={styles.buttonContainer}>
